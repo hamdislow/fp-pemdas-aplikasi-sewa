@@ -262,28 +262,6 @@ class Tampilan_cart:
         self.account_icon = icon(self.window, 250, 570, 60, 60,ColorCodes().main_color, r"assets\icon\account.png", self.go_account)
         self.tampilkan_product_cart()
     
-    # def tampilkan_product_cart(self):
-    #     self.data = r"data\cart.csv"
-    #     with open(self.data, mode='r') as file:
-    #         # Membaca file CSV
-    #         csv_reader = csv.reader(file, delimiter=';')
-    #         # Ambil header
-    #         header = next(csv_reader)
-    #         # Siapkan list untuk menyimpan dictionary
-    #         data_dict = []
-    #         # Proses setiap baris data dan pasangkan dengan header
-    #         for row in csv_reader:
-    #             # Gabungkan header dan row menjadi dictionary
-    #             data_dict.append(dict(zip(header, row)))
-
-    #     # Menampilkan produk di dalam scroll_frame jika on_cart bernilai True
-    #     for i in range(len(data_dict)):
-    #         product = data_dict[i]
-    #         # Mengecek jika 'on_cart' bernilai 'True'
-    #         if product["on_cart"].strip().lower() == 'true':
-    #             self.product = product_in_Cart(self.scroll_frame, name_product=product["product_name"], price=product["price"], unit=product["qty"], image_path=product["link"])
-    #             self.product.pack(padx=(0,0), pady=10, anchor="w")  # Gunakan pack agar widget terdaftar di dalam scrollable frame
-
     def tampilkan_product_cart(self):
         self.data = r"data\cart.csv"
         account_manager = AccountManager()
@@ -397,7 +375,7 @@ class Tampilan_Peminjaman:
 
         # Scroll Frame
         self.scroll_frame = Custom_scroll_frame(self.window, height=450)
-        self.scroll_frame.grid(row=1, column=0,padx=(0, 20), pady=60)
+        self.scroll_frame.grid(row=1, column=0,padx=(0, 20), pady=90)
 
         self.tampilkan_product()
 
@@ -420,8 +398,8 @@ class Tampilan_Peminjaman:
             def add_to_cart_function(prod_num=product_number):  # Gunakan default argumen untuk binding
                 AccountManager().add_to_cart(prod_num)
             # Menampilkan produk di dalam scroll_frame
-            self.product = product_in_list(self.scroll_frame, product["product_name"], product["price"], product["status"], product["qty"], product["link"],  add_to_cart_function=add_to_cart_function)
-            self.product.pack(padx=5, pady=5)
+            self.product = product_in_list(self.scroll_frame, product["product_name"],f"Rp. {product["price"]}" , product["status"], product["qty"], product["link"],  add_to_cart_function=add_to_cart_function)
+            self.product.pack(padx=(0,10), pady=5,anchor="w")
 
     def go_back(self):
         clearFrame(self.window)
