@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../meth
 ########################################################################
 ## IMPORTS MODULE
 ########################################################################
-from models import bg1, bg2, bg3, bg4, bg5, button1, button2,button3,logo, heading,heading2, paragraph, entryField, show_hide_button, icon, checkout_Frame, clearFrame, product_in_Cart, product_in_list, Custom_Forgot_Pass, Custom_Topup, Custom_Logout
+from models import bg1, bg2, bg3, bg4, bg5, button1, button2,button3,logo,logo1, heading,heading2, paragraph, entryField, show_hide_button, icon, checkout_Frame, clearFrame, product_in_Cart, product_in_list, Custom_Forgot_Pass, Custom_Topup, Custom_Logout
 from widget import ColorCodes,FontVariables, Custom_Frame, Custom_Image, Custom_Button, Custom_scroll_frame, Custom_Messagebox, Custom_Button_Icon
 from method import  AccountManager
 from customtkinter import CTk, CTkToplevel
@@ -21,7 +21,7 @@ class Tampilan_start:
         
         self.main_frame = bg4(self.window)
         self.button_mulai = button1(self.window,"Mulai",ColorCodes().secondary_color, command=lambda: Tampilan_signIn_signUp(self.window)).place(x=35,y=380)
-        self.logo = logo(self.window, 150,100, ColorCodes().secondary_color).place(x=100,y=100)
+        self.logo = logo(self.window).place(x=100,y=100)
         
 class Tampilan_signIn_signUp:
     def __init__(self, master):
@@ -31,7 +31,7 @@ class Tampilan_signIn_signUp:
         
         self.main_frame = bg5(self.window)
 
-        self.logo = logo(self.window, 150,100, ColorCodes().secondary_color).place(x=100,y=100)
+        self.logo = logo(self.window).place(x=100,y=100)
 
         self.Selamat_datang = heading(self.window, "Selamat Datang").place(x=20, y=320)
         self.paragraph = paragraph(self.window, "Untuk mengakses semua fitur, mohon daftar (sign up) untuk membuat akun baru. Setelah itu, Anda dapat masuk (sign in) menggunakan kredensial yang telah Anda buat.").place(x=20,y=370)
@@ -59,8 +59,8 @@ class Tampilan_signIn:
         self.main_frame = bg1(self.window)
 
         # Logo
-        self.logo = logo(self.window, 60, 40, ColorCodes().main_color)
-        self.logo.place(x=300, y=0)
+        self.logo = logo1(self.window)
+        self.logo.place(x=250, y=0)
 
         # Tombol kembali
         self.previous = icon(self.window, 20, 10, 20, 20,ColorCodes().main_color, r"assets\icon\arrow.png", self.go_back)
@@ -118,8 +118,8 @@ class Tampilan_signUp:
         self.window.geometry("360x640+500+20") 
         self.main_frame = bg1(self.window)
 
-        self.logo = logo(self.window, 60,40, ColorCodes().main_color)
-        self.logo.place(x=300,y=0)
+        self.logo = logo1(self.window)
+        self.logo.place(x=250,y=0)
 
         self.previous = icon(self.window, 20, 10,20,20,ColorCodes().main_color, r"assets\icon\arrow.png", self.go_back)
         self.Sign_In = heading(self.window, "Sign Up" )
@@ -174,17 +174,17 @@ class Tampilan_main_menu:
         self.current_user = self.logged_in_users[0]  # Ambil username pertama yang login
         saldo = self.account_manager.user_data[self.current_user]['Saldo']
 
-        self.logo = logo(self.window, 60, 40, ColorCodes().secondary_color)
-        self.logo.place(x=150, y=0)
+        self.logo = logo(self.window)
+        self.logo.place(x=100, y=0)
 
         self.frame1 = Custom_Frame(self.window,fg_color=ColorCodes().main_color,bg_color=ColorCodes().secondary_color,corner_radius=20,height=180,width=300,)
-        self.frame1.place(x=30, y=70)
+        self.frame1.place(x=30, y=90)
 
         self.Saldo_label = heading(self.frame1, "Saldo")
-        self.Saldo_label.place(x=20, y=10)
+        self.Saldo_label.place(x=20, y=30)
         
         self.saldo_display = heading(self.frame1, f"Rp. {saldo:,.2f}")
-        self.saldo_display.place(x=20, y=60)
+        self.saldo_display.place(x=20, y=80)
 
         self.top_up = button3(self.frame1,"Top Up",bg_color=ColorCodes().main_color,image=r"assets\icon\plus-activate.png",command=self.go_topUp,)
         self.top_up.place(x=130, y=120)
@@ -262,27 +262,61 @@ class Tampilan_cart:
         self.account_icon = icon(self.window, 250, 570, 60, 60,ColorCodes().main_color, r"assets\icon\account.png", self.go_account)
         self.tampilkan_product_cart()
     
+    # def tampilkan_product_cart(self):
+    #     self.data = r"data\cart.csv"
+    #     with open(self.data, mode='r') as file:
+    #         # Membaca file CSV
+    #         csv_reader = csv.reader(file, delimiter=';')
+    #         # Ambil header
+    #         header = next(csv_reader)
+    #         # Siapkan list untuk menyimpan dictionary
+    #         data_dict = []
+    #         # Proses setiap baris data dan pasangkan dengan header
+    #         for row in csv_reader:
+    #             # Gabungkan header dan row menjadi dictionary
+    #             data_dict.append(dict(zip(header, row)))
+
+    #     # Menampilkan produk di dalam scroll_frame jika on_cart bernilai True
+    #     for i in range(len(data_dict)):
+    #         product = data_dict[i]
+    #         # Mengecek jika 'on_cart' bernilai 'True'
+    #         if product["on_cart"].strip().lower() == 'true':
+    #             self.product = product_in_Cart(self.scroll_frame, name_product=product["product_name"], price=product["price"], unit=product["qty"], image_path=product["link"])
+    #             self.product.pack(padx=(0,0), pady=10, anchor="w")  # Gunakan pack agar widget terdaftar di dalam scrollable frame
+
     def tampilkan_product_cart(self):
         self.data = r"data\cart.csv"
-        with open(self.data, mode='r') as file:
+        account_manager = AccountManager()
+        username_logged_in = account_manager.get_logged_in_user()
+        
+        if not username_logged_in:
+            print("Anda harus login terlebih dahulu.")
+            Custom_Messagebox.messagebox("Error", "Anda harus login terlebih dahulu untuk melihat keranjang.")
+            return False
+        
+        with open(self.data, mode='r', encoding='utf-8') as file:
             # Membaca file CSV
-            csv_reader = csv.reader(file, delimiter=';')
-            # Ambil header
-            header = next(csv_reader)
-            # Siapkan list untuk menyimpan dictionary
-            data_dict = []
-            # Proses setiap baris data dan pasangkan dengan header
-            for row in csv_reader:
-                # Gabungkan header dan row menjadi dictionary
-                data_dict.append(dict(zip(header, row)))
+            csv_reader = csv.DictReader(file, delimiter=';')
 
-        # Menampilkan produk di dalam scroll_frame jika on_cart bernilai True
-        for i in range(len(data_dict)):
-            product = data_dict[i]
-            # Mengecek jika 'on_cart' bernilai 'True'
-            if product["on_cart"].strip().lower() == 'true':
-                self.product = product_in_Cart(self.scroll_frame, name_product=product["product_name"], price=product["price"], unit=product["qty"], image_path=product["link"])
-                self.product.pack(padx=(0,0), pady=10, anchor="w")  # Gunakan pack agar widget terdaftar di dalam scrollable frame
+            # Filter produk berdasarkan IsLoggedIn = True dan on_cart = True
+            filtered_products = [
+                row for row in csv_reader
+                if row['Username'] == username_logged_in
+                and row['IsLoggedIn'].strip().lower() == 'true'
+                and row['on_cart'].strip().lower() == 'true'
+            ]
+
+        # Menampilkan produk di dalam scroll_frame
+        for product in filtered_products:
+            self.product = product_in_Cart(
+                self.scroll_frame,
+                name_product=product["product_name"],
+                price=product["price"],
+                unit=product["qty"],
+                image_path=product["link"]
+            )
+            self.product.pack(padx=(0, 0), pady=10, anchor="w")  # Gunakan pack agar widget terdaftar di dalam scrollable frame
+
 
     def go_home(self):
         clearFrame(self.window)
@@ -355,7 +389,7 @@ class Tampilan_Peminjaman:
         self.user_info = user_info
 
         self.main_frame= bg2(self.window)
-    
+
         self.previous = icon(self.window, 20, 10,20,20,ColorCodes().main_color, r"assets\icon\arrow.png", self.go_back)
         # Heading
         self.Peminjaman = heading(self.window, "Peminjaman", fg_color=ColorCodes().main_color)
@@ -368,6 +402,9 @@ class Tampilan_Peminjaman:
         self.tampilkan_product()
 
     def tampilkan_product(self):
+        account_manager = AccountManager()
+        username_logged_in = account_manager.get_logged_in_user()
+        print(username_logged_in)
         self.data = r"data\product.csv"
         with open(self.data, mode='r') as file:
             # Membaca file CSV

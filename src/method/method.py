@@ -64,6 +64,32 @@ class AccountManager:
             writer = csv.DictWriter(file, fieldnames=["Username", "Password", "Phone_Number", "Saldo", "Fullname", "NIK", "IsLoggedIn"])
             writer.writeheader()
             writer.writerows(updated_rows)
+    
+    def update_cart_login_status(self, username=None, is_logged_in=False):
+        """
+        Memperbarui status 'IsLoggedIn' di file cart.csv sesuai dengan username yang diberikan.
+        Jika username adalah None, semua status 'IsLoggedIn' akan di-set ke False.
+        """
+        updated_rows = []
+        # Buka file CSV dengan pemisah ';'
+        with open(self.cart_file, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file, delimiter=';')  # Tentukan pemisah ';'
+            rows = list(reader)
+
+        # Update baris yang sesuai dengan username
+        for row in rows:
+            if row['Username'] == username:
+                row['IsLoggedIn'] = 'TRUE' if is_logged_in else 'FALSE'  # Ubah menjadi TRUE jika login
+            else:
+                row['IsLoggedIn'] = 'FALSE'  # Set pengguna lain ke FALSE
+            updated_rows.append(row)
+
+        # Tulis kembali data yang sudah diperbarui ke file CSV
+        with open(self.cart_file, mode='w', newline='', encoding='utf-8') as file:
+            fieldnames = ["Username", "number", "product_name", "price", "qty", "link", "on_cart", "IsLoggedIn"]
+            writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';')  # Tentukan pemisah ';'
+            writer.writeheader()
+            writer.writerows(updated_rows)
 
     def sign_in(self, username, password):
         """Metode untuk memverifikasi dan login pengguna."""
@@ -71,7 +97,7 @@ class AccountManager:
         if user and user['Password'] == password:
             # Update status login di file CSV
             self.update_login_status(username, is_logged_in=True)
-
+            self.update_cart_login_status(username, is_logged_in=True)
             # Tandai pengguna ini sebagai aktif di runtime
             self.current_user = username
             self.user_data[username]['IsLoggedIn'] = True  # Update data login pengguna
@@ -79,7 +105,7 @@ class AccountManager:
             return True
         print("Login gagal. Username atau password salah.")
         return False
- 
+
     def sign_up(self, username, password, fullname, phone_number, nik):
         """
         Fungsi untuk mendaftarkan pengguna baru.
@@ -131,13 +157,46 @@ class AccountManager:
         return True
 
     def logout(self):
-        if self.current_user:
-            # Update status login di file CSV
-            self.update_login_status(self.current_user, is_logged_in=False)
-            print(f"{self.current_user} telah logout.")
-            self.current_user = None
-        else:
-            print("Tidak ada pengguna yang sedang login.")
+        # Set semua IsLoggedIn menjadi False
+        for username in self.user_data:
+            self.user_data[username]['IsLoggedIn'] = False
+
+        # Tulis ulang ke file account.csv
+        with open(self.account_file, mode='w', newline='', encoding='utf-8') as file:
+            fieldnames = ["Username", "Password", "Phone_Number", "Saldo", "Fullname", "NIK", "IsLoggedIn"]
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            for username, data in self.user_data.items():
+                writer.writerow({
+                    "Username": username,
+                    "Password": data['Password'],
+                    "Phone_Number": data['Phone_Number'],
+                    "Saldo": data['Saldo'],
+                    "Fullname": data['Fullname'],
+                    "NIK": data['NIK'],
+                    "IsLoggedIn": str(data['IsLoggedIn']),
+                })
+        
+            # Set semua IsLoggedIn di cart.csv menjadi False
+        updated_cart = []
+        try:
+            with open(self.cart_file, mode='r', encoding='utf-8') as file:
+                reader = csv.DictReader(file, delimiter=';')
+                for row in reader:
+                    row['IsLoggedIn'] = 'FALSE'  # Ubah IsLoggedIn menjadi FALSE
+                    updated_cart.append(row)
+        except FileNotFoundError:
+            print(f"File {self.cart_file} tidak ditemukan.")
+
+        # Tulis ulang ke file cart.csv
+        with open(self.cart_file, mode='w', newline='', encoding='utf-8') as file:
+            fieldnames = ["Username", "number", "product_name", "price", "qty", "link", "on_cart", "IsLoggedIn"]
+            writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';')
+            writer.writeheader()
+            writer.writerows(updated_cart)
+            # Clear current_user
+        print("Semua pengguna telah logout.")
+        self.current_user = None
 
     def top_up(self, amount):
         self.isLoggedIn = self.load_user_data()
@@ -217,12 +276,21 @@ class AccountManager:
         self.current_user = username
         print(f"Login berhasil sebagai {username}")
 
+    def get_logged_in_user(self):
+        for username, data in self.user_data.items():
+            if data['IsLoggedIn']:
+                return username
+        return None
+
     def add_to_cart(self, product_number):
-        if not self.current_user:
+        # Ambil username yang sedang login
+        username_logged_in = self.get_logged_in_user()
+        
+        if not username_logged_in:
             print("Anda harus login terlebih dahulu.")
             return False
 
-        print(f"Menambahkan produk dengan nomor {product_number} untuk user {self.current_user}")
+        print(f"Menambahkan produk dengan nomor {product_number} untuk user {username_logged_in}")
 
         product_found = False
         selected_product = None
@@ -243,8 +311,9 @@ class AccountManager:
                             "price": row["price"],
                             "qty": row["qty"],
                             "link": row["link"],
-                            "Username": self.current_user,
+                            "Username": username_logged_in,  # Tambahkan username yang sedang login
                             "on_cart": "TRUE",
+                            "IsLoggedIn": "TRUE",  # Tandai bahwa data ini milik user yang login
                         }
                         print("Produk ditemukan:", selected_product)
                         break
@@ -259,7 +328,7 @@ class AccountManager:
         # Tambahkan produk ke cart.csv
         try:
             with open(self.cart_file, mode='a', encoding='utf-8', newline='') as file:
-                fieldnames = ['Username', 'number', 'product_name', 'price', 'qty', 'link', 'on_cart']
+                fieldnames = ['Username', 'number', 'product_name', 'price', 'qty', 'link', 'on_cart', 'IsLoggedIn']
                 writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter=';')
 
                 if file.tell() == 0:  # Tambahkan header jika file kosong
@@ -272,7 +341,6 @@ class AccountManager:
             return False
 
         return True
-
 
 class list_product:
     def __init__(self):

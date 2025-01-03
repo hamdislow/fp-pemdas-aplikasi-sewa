@@ -59,9 +59,32 @@ class button3(Custom_Button):
         
         super().__init__(master=master, text=text, compound="right",image=self.image,text_color=ColorCodes().secondary_color, width=160,fg_color=ColorCodes().third_color, font=FontVariables().Heading2_Custom_Font, hover_color=ColorCodes().third_color,bg_color= bg_color,command=command)
 
-class logo(Custom_Image):
-    def __init__(self, master,width, height, bg_color):
-        super().__init__(master=master, width=width,height=height,bg_color=bg_color, image=r"assets\logo\logo.png")
+class logo(Custom_Frame):
+    def __init__(self, master, fg_color=ColorCodes().secondary_color, width=150, height=90, **kwargs):
+        super().__init__(master,fg_color=fg_color, width=width,height=height,**kwargs)
+        self.configure(corner_radius=10,bg_color=ColorCodes().secondary_color)
+
+        # Terpilih Total
+        self.sudo = Custom_Text(self, text="SUDO",text_color=ColorCodes().third_color, font=("Poppins", 36))
+        self.sudo.place(x=20,y=0)
+        self.super_roda = Custom_Text(self, text="Super Roda",justify="center",text_color=ColorCodes().third_color, font=("Poppins", 24))
+        self.super_roda.place(x=5,y=45)
+        self.frame1= Custom_Frame(self,bg_color=ColorCodes().secondary_color,fg_color=ColorCodes().main_color,width=20,height=20,corner_radius= 20)
+        self.frame1.place(x=100, y=14)
+
+class logo1(Custom_Frame):
+    def __init__(self, master, fg_color=ColorCodes().main_color, width=75, height=55, **kwargs):
+        super().__init__(master,fg_color=fg_color, width=width,height=height,**kwargs)
+        self.configure(corner_radius=10,bg_color=ColorCodes().main_color)
+
+        # Terpilih Total
+        self.sudo = Custom_Text(self, text="SUDO",text_color=ColorCodes().third_color, font=("Poppins", 18))
+        self.sudo.place(x=10,y=0)
+        self.super_roda = Custom_Text(self, text="Super Roda",justify="center",text_color=ColorCodes().third_color, font=("Poppins", 12))
+        self.super_roda.place(x=5,y=25)
+        self.frame1= Custom_Frame(self,bg_color=ColorCodes().main_color,fg_color=ColorCodes().secondary_color,width=10,height=10,corner_radius= 20)
+        self.frame1.place(x=50, y=7)
+
 
 class heading(Custom_Text):
     def __init__(self, master, text, fg_color=ColorCodes().main_color):

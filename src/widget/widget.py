@@ -151,13 +151,13 @@ class Custom_Text(CTkLabel):
                 master=None, 
                 text="Default Label Text",
                 width=500,
-                height=40,
+                height=10,
                 font=None,
+                padx=0,
+                pady=0,
                 text_color=ColorCodes().third_color,
                 anchor="w",
                 justify="left",
-                padx=10, 
-                pady=10,
                 **kwargs):
         font = font or FontVariables().Heading1_Custom_Font
         super().__init__(master,
