@@ -243,15 +243,20 @@ class AccountManager:
             writer.writerow([username, saldo_awal, saldo_akhir, amount, type_transaksi, timestamp])
         print(f"Riwayat top-up untuk {username} berhasil disimpan.")
 
-    def get_user_info(self):
-        if self.current_user:
+    def get_user_info(self, username=None):
+        """Retrieve user information based on username."""
+        if username is None:
+            username = self.current_user  # Use current_user if no username is provided
+        
+        user_info = self.user_data.get(username)
+        if user_info:
             return {
-                "Username": self.username,
-                "NIK": self.nik,
-                "Phone_Number": self.phone_number,
-                "Fullname": self.fullname
+                "Username": username,
+                "NIK": user_info['NIK'],
+                "Phone_Number": user_info['Phone_Number'],
+                "Fullname": user_info['Fullname']
             }
-        print("Tidak ada pengguna yang sedang login.")
+        print("User not found.")
         return None
     
     def get_user_password(self, username):
