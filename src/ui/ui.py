@@ -10,6 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../meth
 from models import bg1, bg2, bg3, bg4, bg5, button1, button2,button3,logo,logo1, heading,heading2, paragraph, entryField, show_hide_button, icon, checkout_Frame, clearFrame, product_in_Cart, product_in_list, Custom_Forgot_Pass, Custom_Topup, Custom_Logout
 from widget import ColorCodes,FontVariables, Custom_Frame, Custom_Image, Custom_Button, Custom_scroll_frame, Custom_Messagebox, Custom_Button_Icon
 from method import  AccountManager
+from models import Checkout
 from customtkinter import CTk, CTkToplevel
 import csv
 
@@ -100,10 +101,12 @@ class Tampilan_signIn:
 
         account_manager = AccountManager()
         if account_manager.sign_in(username, password):
-            global user_info
-            user_info = account_manager.get_user_info()  # Simpan informasi pengguna
-            user_info = account_manager.get_user_info()
-            Tampilan_main_menu(self.window, user_info)  # Kirim info pengguna            
+            Custom_Messagebox.messagebox("Success", "Login berhasil. Selamat datang, " + username + "!")
+            
+            # Retrieve user info after successful login
+            user_info = account_manager.get_user_info()  # No need to pass username now
+            
+            Tampilan_account(self.window, user_info)  # Pass user_info to the profile page
         else:
             Custom_Messagebox.messagebox("Error", "Username atau Password salah!")
     
@@ -119,18 +122,18 @@ class Tampilan_signUp:
         self.main_frame = bg1(self.window)
 
         self.logo = logo1(self.window)
-        self.logo.place(x=250,y=0)
+        self.logo.place(x=250, y=0)
 
-        self.previous = icon(self.window, 20, 10,20,20,ColorCodes().main_color, r"assets\icon\arrow.png", self.go_back)
-        self.Sign_In = heading(self.window, "Sign Up" )
-        self.Sign_In.place(x=20,y= 50)
+        self.previous = icon(self.window, 20, 10, 20, 20, ColorCodes().main_color, r"assets\icon\arrow.png", self.go_back)
+        self.Sign_In = heading(self.window, "Sign Up")
+        self.Sign_In.place(x=20, y=50)
         self.paragraph = paragraph(self.window, "Silahkan isi formulir di bawah ini untuk daftar")
         self.paragraph.place(x=20, y=100)
 
         self.fullname = entryField(self.window, "Fullname", "")
         self.fullname.place(x=30, y=200)
-        self.phonenumber = entryField(self.window,"Phone Number", "")
-        self.phonenumber.place(x= 30,y= 250)
+        self.phonenumber = entryField(self.window, "Phone Number", "")
+        self.phonenumber.place(x=30, y=250)
         self.nik = entryField(self.window, "NIK", "")
         self.nik.place(x=30, y=300)
         self.username = entryField(self.window, "Username", "")
@@ -141,8 +144,9 @@ class Tampilan_signUp:
         self.show_hide_button = show_hide_button(self.window, target=self.password_entry)
         self.show_hide_button.place(x=255, y=405)
 
-        self.button_signUp = button2(self.window, "Sign Up",bg_color= ColorCodes().secondary_color, command=self.sign_up).place(x= 35, y=500)
-        
+        self.button_signUp = button2(self.window, "Sign Up", bg_color=ColorCodes().secondary_color, command=self.sign_up)
+        self.button_signUp.place(x=35, y=500)
+
     def go_back(self):
         """Kembali ke tampilan Sign Up."""
         clearFrame(self.window)
@@ -150,7 +154,7 @@ class Tampilan_signUp:
 
     def sign_up(self):
         self.account_manager = AccountManager()
-        """Logika untuk proses Sign In."""
+        """Logika untuk proses Sign Up."""
         fullname = self.fullname.get()
         nik = self.nik.get()
         phone_number = self.phonenumber.get()
@@ -159,8 +163,14 @@ class Tampilan_signUp:
 
         if self.account_manager.sign_up(username, password, phone_number, fullname, nik):
             Custom_Messagebox.messagebox(title="Success", text="Akun berhasil dibuat!")
-            Tampilan_signIn(self.window)
-        
+            
+            # Retrieve user info after successful sign-up
+            user_info = self.account_manager.get_user_info(username)  # Get user info using the updated method
+            
+            # Navigate to the profile page with user info
+            clearFrame(self.window)  # Clear the current frame
+            Tampilan_account(self.window, user_info)  # Pass user_info to the profile page
+
 class Tampilan_main_menu:
     def __init__(self, master,user_info=None):
         self.window = master
@@ -242,6 +252,10 @@ class Tampilan_cart:
         self.window.title("Icon Inside Button")
         self.window.geometry("360x640+500+20")
         self.user_info = user_info
+        
+        # Initialize cart_items
+        self.cart_items = []
+
         # Background Frame
         self.main_frame = bg3(self.window)
 
@@ -251,32 +265,36 @@ class Tampilan_cart:
 
         # Scroll Frame
         self.scroll_frame = Custom_scroll_frame(self.window, height=320, width=295)
-        self.scroll_frame.grid(row=1, column=0,padx=(15, 10), pady=10)
-    
+        self.scroll_frame.grid(row=1, column=0, padx=(15, 10), pady=10)
+
         # Checkout Frame
-        checkout_Frame(self.window).grid(row=2, column=0, padx=(10, 10), pady=10)
+        self.checkout_frame = checkout_Frame(self.window, self.cart_items, self.user_info)
+        self.checkout_frame.grid(row=2, column=0, padx=(10, 10), pady=10)
+
+        # Load cart items
+        self.tampilkan_product_cart()
 
         # Icon navigation
-        self.home_icon = icon(self.window, 30, 570, 60, 60,ColorCodes().main_color, r"assets\icon\home.png", self.go_home)
-        self.cart_icon = icon(self.window, 130, 570, 60, 60,ColorCodes().main_color, r"assets\icon\grocery-store-activate.png", self.go_cart)
-        self.account_icon = icon(self.window, 250, 570, 60, 60,ColorCodes().main_color, r"assets\icon\account.png", self.go_account)
-        self.tampilkan_product_cart()
-    
+        self.home_icon = icon(self.window, 30, 570, 60, 60, ColorCodes().main_color, r"assets\icon\home.png", self.go_home)
+        self.cart_icon = icon(self.window, 130, 570, 60, 60, ColorCodes().main_color, r"assets\icon\grocery-store-activate.png", self.go_cart)
+        self.account_icon = icon(self.window, 250, 570, 60, 60, ColorCodes().main_color, r"assets\icon\account.png", self.go_account)
+
     def tampilkan_product_cart(self):
+        """Load and display products in the cart."""
         self.data = r"data\cart.csv"
         account_manager = AccountManager()
         username_logged_in = account_manager.get_logged_in_user()
-        
+
         if not username_logged_in:
             print("Anda harus login terlebih dahulu.")
             Custom_Messagebox.messagebox("Error", "Anda harus login terlebih dahulu untuk melihat keranjang.")
             return False
-        
+
         with open(self.data, mode='r', encoding='utf-8') as file:
-            # Membaca file CSV
+            # Read the CSV file
             csv_reader = csv.DictReader(file, delimiter=';')
 
-            # Filter produk berdasarkan IsLoggedIn = True dan on_cart = True
+            # Filter products in the cart for the logged-in user
             filtered_products = [
                 row for row in csv_reader
                 if row['Username'] == username_logged_in
@@ -284,27 +302,59 @@ class Tampilan_cart:
                 and row['on_cart'].strip().lower() == 'true'
             ]
 
-        # Menampilkan produk di dalam scroll_frame
+        # Clear existing cart items
+        self.cart_items = []
+
+        # Display filtered products
         for product in filtered_products:
-            self.product = product_in_Cart(
+            cart_item = {
+                'product_name': product["product_name"],
+                'price': float(product["price"]),
+                'quantity': int(product["qty"]),
+                'link': product["link"],
+                'checked': True,  # Default to checked
+            }
+            self.cart_items.append(cart_item)
+            product_widget = product_in_Cart(
                 self.scroll_frame,
                 name_product=product["product_name"],
                 price=product["price"],
                 unit=product["qty"],
-                image_path=product["link"]
+                image_path=product["link"],
+                cart_item=cart_item,
+                update_cart_callback=self.update_checkout_frame,  # Pass the callback
             )
-            self.product.pack(padx=(0, 0), pady=10, anchor="w")  # Gunakan pack agar widget terdaftar di dalam scrollable frame
+            product_widget.pack(padx=(0, 0), pady=10, anchor="w")
 
+        # Update the checkout frame
+        self.update_checkout_frame()
+
+    def update_checkout_frame(self):
+        """Update the checkout frame with the latest cart data."""
+        self.checkout_frame.cart = self.cart_items  # Update the cart in checkout_frame
+        self.checkout_frame.value_terpilih.configure(
+            text=f"{self.checkout_frame.calculate_total_quantity()} Unit"
+        )
+        self.checkout_frame.value_harga.configure(
+            text=f"Rp. {self.checkout_frame.calculate_total_price():,.2f}"
+        )
+
+    def get_cart(self):
+        """Return the cart items for checkout."""
+        return self.cart_items
 
     def go_home(self):
+        """Navigate to the home screen."""
         clearFrame(self.window)
         Tampilan_main_menu(self.window, self.user_info)
 
     def go_cart(self):
+        """Reload the cart screen."""
         clearFrame(self.window)
         Tampilan_cart(self.window, self.user_info)
 
     def go_account(self):
+        """Navigate to the account screen."""
         clearFrame(self.window)
         Tampilan_account(self.window, self.user_info)
 
@@ -428,9 +478,3 @@ class Top_level_topUp(CTkToplevel):
         self.window.geometry("360x640+500+20")
         
         self.main_frame = bg1(self.window)
-
-if __name__ == "__main__":
-    window = CTk()  # Membuat objek window utama
-    window.resizable(True, True)
-    gui = Tampilan_start(window)  # Membuat objek coba dan passing window utama
-    window.mainloop()  # Menjalankan aplikasi
