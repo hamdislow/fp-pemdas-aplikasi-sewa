@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../widget')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../method')))
 ########################################################################
@@ -7,7 +8,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../meth
 ########################################################################
 from widget import FontVariables, Custom_Frame, Custom_Button, Default_Frame, ColorCodes, Custom_Image, Custom_Text, Custom_Button_Icon, Custom_Entry, Custom_TopLevel, Custom_scroll_frame
 from customtkinter import CTkImage, CTkFrame,CTkButton,CTkLabel, IntVar, CTkCheckBox, CTkToplevel
+import uuid  # Import for generating a unique transaction ID
 from method import AccountManager
+from datetime import datetime
+from widget import Custom_Messagebox
 from PIL import Image
 import csv
 
@@ -158,29 +162,58 @@ class icon(Custom_Button_Icon):
         self.Button = Custom_Button_Icon(self.window,text="",bg_color = bg_color, fg_color=ColorCodes().main_color,icon=self.link_icon,command=command, hover_color=ColorCodes().main_color, icon_size=(panjang, lebar),font=FontVariables().Heading2_Custom_Font).place(x=x, y=y)
 
 class checkout_Frame(CTkFrame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, cart, user_info, **kwargs):
         super().__init__(master, **kwargs)
-        self.configure(corner_radius=10, border_color=ColorCodes().main_color, fg_color=ColorCodes().secondary_color, width=300,bg_color=ColorCodes().secondary_color,border_width=2)
+        self.cart = cart  # Store the cart data
+        self.user_info = user_info  # Store user information
+        self.configure(corner_radius=10, border_color=ColorCodes().main_color, fg_color=ColorCodes().secondary_color, width=300, bg_color=ColorCodes().secondary_color, border_width=2)
 
-        # Terpilih Total
-        self.label_terpilih = CTkLabel(self, text="Terpilih Total:",text_color=ColorCodes().third_color, font=FontVariables().Paragraph1_Custom_Font)
+        # Total Units
+        self.label_terpilih = CTkLabel(self, text="Terpilih Total:", text_color=ColorCodes().third_color, font=FontVariables().Paragraph1_Custom_Font)
         self.label_terpilih.grid(row=0, column=0, padx=(10, 5), pady=(5, 2), sticky="w")
 
-        self.value_terpilih = CTkLabel(self, text="5 Unit", text_color=ColorCodes().third_color,font=FontVariables().Paragraph1_Custom_Font)
+        self.value_terpilih = CTkLabel(self, text=f"{self.calculate_total_quantity()} Unit", text_color=ColorCodes().third_color, font=FontVariables().Paragraph1_Custom_Font)
         self.value_terpilih.grid(row=1, column=0, padx=(10, 5), pady=(2, 5), sticky="w")
 
-        # Total Harga
-        self.label_harga = CTkLabel(self, text="Total Harga:",text_color=ColorCodes().third_color, font=FontVariables().Paragraph1_Custom_Font)
+        # Total Price
+        self.label_harga = CTkLabel(self, text="Total Harga:", text_color=ColorCodes().third_color, font=FontVariables().Paragraph1_Custom_Font)
         self.label_harga.grid(row=0, column=1, padx=(10, 5), pady=(5, 2), sticky="w")
 
-        self.value_harga = CTkLabel(self, text="Rp. 100.000",text_color=ColorCodes().third_color, font=FontVariables().Paragraph1_Custom_Font)
+        self.value_harga = CTkLabel(self, text=f"Rp. {self.calculate_total_price():,.2f}", text_color=ColorCodes().third_color, font=FontVariables().Paragraph1_Custom_Font)
         self.value_harga.grid(row=1, column=1, padx=(10, 5), pady=(2, 5), sticky="w")
 
-        # Button Check Out
+        # Checkout Button
         self.button_checkout = CTkButton(
-            self, text="Check Out", width=80 ,fg_color=ColorCodes().main_color, hover_color=ColorCodes().main_color, text_color=ColorCodes().third_color, font=FontVariables().Paragraph2_Custom_Font
+            self, text="Check Out", width=80, fg_color=ColorCodes().main_color, hover_color=ColorCodes().main_color, text_color=ColorCodes().third_color, font=FontVariables().Paragraph2_Custom_Font, command=self.checkout
         )
         self.button_checkout.grid(row=0, column=2, rowspan=2, padx=(10, 10), pady=(5, 5), sticky="e")
+
+    def calculate_total_price(self):
+        """Calculate the total price of checked items in the cart."""
+        total_price = sum(item['price'] * item['quantity'] for item in self.cart if item['checked'])
+        return total_price
+
+    def calculate_total_quantity(self):
+        """Calculate the total quantity of checked items in the cart."""
+        total_quantity = sum(item['quantity'] for item in self.cart if item['checked'])
+        return total_quantity
+
+    def checkout(self):
+        """Handle the checkout process."""
+        checked_items = [item for item in self.cart if item['checked']]
+        if not checked_items:
+            Custom_Messagebox.messagebox("Error", "No items selected for checkout!")
+            return
+
+        # Proceed with checkout for checked items
+        payment_info = {"method": "saldo"}  # Example payment info
+        checkout = Checkout(checked_items, self.user_info)
+        try:
+            invoice = checkout.checkout(payment_info)
+            Custom_Messagebox.messagebox("Success", "Checkout successful! Invoice saved.")
+        except Exception as e:
+            Custom_Messagebox.messagebox("Error", str(e))
+
 
 class product_in_Cart(CTkFrame):
     def __init__(self, master,name_product,unit,price, image_path,**kwargs):
@@ -498,9 +531,245 @@ class Invoice (CTkFrame):
 
 
 
-
 class clearFrame():
     def __init__(self,master):
         self.window = master
         for widget in self.window.winfo_children():
             widget.destroy()
+
+class Invoice:
+    def __init__(self, user_info, cart):
+        self.user_info = user_info
+        self.cart = cart
+        self.total_amount = self.calculate_total()
+        self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.transaction_id = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4()}"
+        self.booking_code = self.generate_booking_code()
+        self.total_accumulation = 0  # Track the total accumulation for this transaction
+
+    def calculate_total(self):
+        """Calculate the total quantity of items in the cart."""
+        return sum(item['quantity'] for item in self.cart)
+    
+    def calculate_total_cost(self):
+        """Calculate the total cost of items in the cart."""
+        return sum(item['price'] * item['quantity'] for item in self.cart)
+
+    def generate_booking_code(self):
+        """Generate a random booking code (can be alphanumeric)."""
+        return f"BOOK-{int(datetime.now().timestamp())}"  # Example format
+
+    def to_dict(self):
+        """Convert the invoice data into a dictionary for saving as JSON."""
+        items = []
+        total_accumulation = 0
+
+        for item in self.cart:
+            total_price = item['price'] * item['quantity']
+            total_accumulation += total_price
+            items.append({
+                "number": self.cart.index(item) + 1,
+                "product_name": item['product_name'],
+                "price": item['price'],
+                "amount": item['quantity'],
+                "total_price": total_price
+            })
+
+        return {
+            "id_transaction": self.transaction_id,
+            "user_info": {
+                "username": self.user_info['Username'],
+                "fullname": self.user_info['Fullname'],
+                "NIK": self.user_info['NIK'],
+                "phone_number": self.user_info['Phone_Number']
+            },
+            "items": items,
+            "total_amount": self.total_amount,
+            "total_accumulation": total_accumulation,
+            "code_booking": self.booking_code,
+            "timestamp": self.timestamp
+        }
+
+    def save_to_json(self):
+        """Save the invoice to a JSON file."""
+        json_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data/invoices.json"))
+
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
+
+        # Read existing data if the file already exists
+        existing_data = []
+        if os.path.exists(json_file_path):
+            with open(json_file_path, 'r', encoding='utf-8') as file:
+                try:
+                    existing_data = json.load(file)
+                except json.JSONDecodeError:
+                    existing_data = []  # If the file is empty or corrupted
+
+        # Add the current invoice data
+        existing_data.append(self.to_dict())
+
+        # Save the updated data back to the file
+        with open(json_file_path, 'w', encoding='utf-8') as file:
+            json.dump(existing_data, file, indent=4, ensure_ascii=False)
+
+        print(f"Invoice saved")
+
+class Checkout:
+    def __init__(self, cart, user_info):
+        self.cart = cart
+        self.user_info = user_info
+        self.account_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data/account.csv"))
+
+    def process_payment(self):
+        total_cost = sum(item['price'] * item['quantity'] for item in self.cart)
+
+        # Load user data from account.csv
+        user_data = {}
+        try:
+            with open(self.account_file, mode='r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    username = row['Username']
+                    user_data[username] = row
+        except FileNotFoundError:
+            raise Exception(f"Account data file not found at: {self.account_file}")
+
+        # Check if the user has enough balance (Saldo)
+        username = self.user_info['Username']
+        if username not in user_data:
+            raise Exception("User not found.")
+
+        user_saldo = float(user_data[username]['Saldo'])  # Current user balance
+        if user_saldo < total_cost:
+            print(f"Payment failed: Insufficient funds. Required: {total_cost}, Available: {user_saldo}")
+            return False
+
+        # Deduct the total cost from the user's balance
+        user_data[username]['Saldo'] = str(user_saldo - total_cost)
+
+        # Update the account.csv file with the new balance
+        self.update_account_data(user_data)
+
+        print(f"Payment successful. New balance: {user_data[username]['Saldo']}")
+        return True
+
+    def update_account_data(self, user_data):
+        # Write updated user data back to account.csv
+        with open(self.account_file, mode='w', newline='', encoding='utf-8') as file:
+            fieldnames = ['Username', 'Password', 'Phone_Number', 'Saldo', 'Fullname', 'NIK', 'IsLoggedIn']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            for user, data in user_data.items():
+                writer.writerow(data)
+
+    def checkout(self, payment_info=None):  
+        if self.process_payment():
+            # If payment is successful, create and save the invoice
+            invoice = Invoice(self.user_info, self.cart)
+            invoice.save_to_json()
+            print("Checkout completed successfully. Invoice saved.")
+            return invoice
+        else:
+            # If payment fails, raise an exception
+            raise Exception("Payment failed due to insufficient funds.")
+        
+
+class product_in_Cart(CTkFrame):
+    def __init__(self, master, name_product, unit, price, image_path, cart_item, update_cart_callback, **kwargs):
+        super().__init__(master=master, **kwargs)
+        self.configure(
+            corner_radius=20,
+            border_color=ColorCodes().secondary_color,
+            fg_color=ColorCodes().secondary_color,
+            height=200,
+            bg_color=ColorCodes().main_color,
+            border_width=2,
+        )
+
+        self.cart_item = cart_item
+        self.update_cart_callback = update_cart_callback  # Callback to update the UI
+        self.is_checked = IntVar(value=1)  # Checkbox state (1 = checked, 0 = unchecked)
+
+        # Product Image
+        self.image_product = Custom_Image(self, image=image_path, width=100, height=80)
+        self.image_product.grid(row=0, column=0, rowspan=2, padx=(20, 10), pady=(10, 10))
+
+        # Check Box
+        self.chk_box = CTkCheckBox(
+            self,
+            checkbox_width=20,
+            checkbox_height=20,
+            width=20,
+            text="",
+            variable=self.is_checked,
+            command=self.toggle_checkbox,  # Call when checkbox is toggled
+            hover_color=ColorCodes().main_color,
+            fg_color=ColorCodes().main_color,
+            checkmark_color=ColorCodes().third_color,
+            border_color=ColorCodes().third_color,
+        )
+        self.chk_box.place(x=10, y=5)
+
+        # Product Name
+        self.label_product = CTkLabel(
+            self,
+            text=name_product,
+            text_color=ColorCodes().third_color,
+            width=130,
+            wraplength=130,
+            justify="left",
+            anchor="w",
+            font=("Arial", 9, "bold"),
+        )
+        self.label_product.grid(row=0, column=1, padx=(0, 20), pady=(5, 0), sticky="w")
+
+        # Quantity Selector
+        self.quantity_selector = QuantitySelector(
+            self,
+            fg_color=ColorCodes().secondary_color,
+        )
+        self.quantity_selector.quantity.set(unit)  # Set the initial quantity
+        self.quantity_selector.quantity.trace(
+            "w", lambda *args: self.update_quantity(self.quantity_selector.quantity.get())
+        )  # Trace quantity changes
+        self.quantity_selector.grid(row=1, column=1, padx=(0, 20), pady=(5, 0), sticky="w")
+
+        # Price Label
+        self.price_label = CTkLabel(
+            self,
+            anchor="w",
+            text=f"Rp. {price}",
+            text_color=ColorCodes().third_color,
+            font=FontVariables().Paragraph2_Custom_Font,
+        )
+        self.price_label.grid(row=2, column=1, padx=0, pady=0)
+
+        # Delete Button
+        self.delete_button = Custom_Button_Icon(
+            self,
+
+            icon= os.path.abspath(os.path.join(os.path.dirname(__file__),"../../assets/icon/delete-button.png")),  # Path to your delete icon
+            width=10,
+            height=10,
+            command=self.delete_item,  # Call the delete method
+            fg_color=ColorCodes().secondary_color,
+            bg_color=ColorCodes().secondary_color,
+            text_color="white",
+            hover_color=ColorCodes().main_color,
+        )
+        self.delete_button.grid(row=2, column=2, padx=(10, 0), sticky="e")
+
+    def toggle_checkbox(self):
+        """Toggle the checked state of this product."""
+        self.cart_item["checked"] = bool(self.is_checked.get())  # Update cart item state
+        self.update_cart_callback()  # Trigger UI update
+
+    def update_quantity(self, new_quantity):
+        """Update the quantity of the cart item."""
+        self.cart_item["quantity"] = new_quantity
+        self.update_cart_callback()  # Call the callback to refresh the UI
+
+    def delete_item(self):
+        """Delete this product from the cart."""
+        self.delete_callback(self.cart_item)  # Call the delete callback
