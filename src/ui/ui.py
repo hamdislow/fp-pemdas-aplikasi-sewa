@@ -309,7 +309,7 @@ class Tampilan_cart:
         for product in filtered_products:
             cart_item = {
                 'product_name': product["product_name"],
-                'price': float(product["price"]),
+                'price': int(product["price"].replace('.', '')), # replaces all . characters in the price string with an empty string ('')
                 'quantity': int(product["qty"]),
                 'link': product["link"],
                 'checked': True,  # Default to checked
@@ -336,7 +336,7 @@ class Tampilan_cart:
             text=f"{self.checkout_frame.calculate_total_quantity()} Unit"
         )
         self.checkout_frame.value_harga.configure(
-            text=f"Rp. {self.checkout_frame.calculate_total_price():,.2f}"
+            text=f"Rp. {self.checkout_frame.calculate_total_price():}"
         )
 
     def get_cart(self):

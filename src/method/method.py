@@ -313,13 +313,14 @@ class AccountManager:
                         selected_product = {
                             "number": row["number"],
                             "product_name": row["product_name"],
-                            "price": row["price"],
+                            "price": int(row["price"]),
                             "qty": row["qty"],
                             "link": row["link"],
                             "Username": username_logged_in,  # Tambahkan username yang sedang login
                             "on_cart": "TRUE",
                             "IsLoggedIn": "TRUE",  # Tandai bahwa data ini milik user yang login
                         }
+                        price = int(price)
                         print("Produk ditemukan:", selected_product)
                         break
         except FileNotFoundError:
